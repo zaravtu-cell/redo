@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DocDriv - Personal File Storage & Sharing</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+            color: #00ffff;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(0,255,255,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+            z-index: -1;
+            pointer-events: none;
+        }
+        header {
+            background: rgba(0, 0, 0, 0.8);
+            padding: 30px;
+            text-align: center;
+            border-bottom: 2px solid #00ffff;
+            box-shadow: 0 0 20px #00ffff;
+        }
+        header h1 {
+            margin: 0;
+            color: #00ffff;
+            font-size: 3em;
+            text-shadow: 0 0 20px #00ffff, 0 0 40px #00ffff;
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+        @keyframes glow {
+            from { text-shadow: 0 0 20px #00ffff, 0 0 40px #00ffff; }
+            to { text-shadow: 0 0 30px #00ffff, 0 0 50px #00ffff; }
+        }
+        header p {
+            margin: 10px 0 0 0;
+            font-size: 1.2em;
+            color: #00cccc;
+        }
+        main {
+            flex: 1;
+            padding: 30px;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        .file-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        .file-card {
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid #00ffff;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+        .file-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: conic-gradient(from 0deg, transparent, rgba(0,255,255,0.1), transparent);
+            animation: rotate 4s linear infinite;
+            z-index: -1;
+        }
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .file-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 255, 255, 0.4);
+            border-color: #00cccc;
+        }
+        .file-icon {
+            font-size: 4em;
+            margin-bottom: 15px;
+            color: #00ffff;
+            text-shadow: 0 0 10px #00ffff;
+        }
+        .file-name {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #ffffff;
+        }
+        .file-details {
+            font-size: 0.9em;
+            color: #00cccc;
+            margin-bottom: 15px;
+        }
+        .file-link {
+            display: inline-block;
+            background: linear-gradient(45deg, #00ffff, #0080ff);
+            color: #000;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+        .file-link:hover {
+            background: linear-gradient(45deg, #0080ff, #00ffff);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.8);
+            transform: scale(1.05);
+        }
+        footer {
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            text-align: center;
+            border-top: 2px solid #00ffff;
+            color: #00cccc;
+            box-shadow: 0 0 20px #00ffff;
+        }
+        .loading {
+            text-align: center;
+            padding: 100px;
+            color: #00ffff;
+            font-size: 1.5em;
+        }
+        .error {
+            text-align: center;
+            padding: 100px;
+            color: #ff6b6b;
+            font-size: 1.5em;
+        }
+        @media (max-width: 768px) {
+            .file-grid {
+                grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            }
+            header h1 {
+                font-size: 2.5em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>DocDriv</h1>
+        <p>CyberFuturistic File Storage & Sharing</p>
+    </header>
+    <main>
+        <div class="file-grid" id="fileGrid">
+            <div class="loading">Initializing Cyber Interface...</div>
+        </div>
+    </main>
+    <footer>
+        <p>&copy; 2026 DocDriv | Powered by Cyber Technology</p>
+    </footer>
+
+    <script>
+        const repoOwner = 'zaravtu-cell';
+        const repoName = 'redo';
+        const branch = 'main';
+
+        async function fetchFiles() {
+            try {
+                const response = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/contents?ref=${branch}`);
+                if (!response.ok) {
+                    throw new Error('Cyber Link Failed');
+                }
+                const files = await response.json();
+                displayFiles(files);
+            } catch (error) {
+                document.getElementById('fileGrid').innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+
+        function displayFiles(files) {
+            const grid = document.getElementById('fileGrid');
+            grid.innerHTML = '';
+
+            files.forEach(file => {
+                if (file.type === 'file' && file.name !== 'index.html' && file.name !== 'README.md') {
+                    const fileName = file.name;
+                    const fileExt = fileName.split('.').pop().toLowerCase();
+                    const fileSize = formatSize(file.size);
+                    const iconClass = getFileIcon(fileExt);
+                    const downloadUrl = file.download_url;
+
+                    const card = document.createElement('div');
+                    card.className = 'file-card';
+                    card.innerHTML = `
+                        <div class="file-icon"><i class="${iconClass}"></i></div>
+                        <div class="file-name">${fileName}</div>
+                        <div class="file-details">
+                            <div>Extension: ${fileExt.toUpperCase()}</div>
+                            <div>Size: ${fileSize}</div>
+                        </div>
+                        <a href="${downloadUrl}" class="file-link" download>Download</a>
+                    `;
+                    grid.appendChild(card);
+                }
+            });
+        }
+
+        function getFileIcon(ext) {
+            const icons = {
+                'zip': 'fas fa-file-archive',
+                'rar': 'fas fa-file-archive',
+                'exe': 'fas fa-cogs',
+                'js': 'fab fa-js-square',
+                'vbs': 'fas fa-code',
+                'pdf': 'fas fa-file-pdf',
+                'doc': 'fas fa-file-word',
+                'docx': 'fas fa-file-word',
+                'xls': 'fas fa-file-excel',
+                'xlsx': 'fas fa-file-excel',
+                'ppt': 'fas fa-file-powerpoint',
+                'pptx': 'fas fa-file-powerpoint',
+                'txt': 'fas fa-file-alt',
+                'jpg': 'fas fa-file-image',
+                'jpeg': 'fas fa-file-image',
+                'png': 'fas fa-file-image',
+                'gif': 'fas fa-file-image',
+                'mp4': 'fas fa-file-video',
+                'mp3': 'fas fa-file-audio',
+                'default': 'fas fa-file'
+            };
+            return icons[ext] || icons.default;
+        }
+
+        function formatSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        fetchFiles();
+    </script>
+</body>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DocDriv - Personal File Storage & Sharing</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #121212;
+            color: #e0e0e0;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        header {
+            background-color: #1e1e1e;
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid #333;
+        }
+        header h1 {
+            margin: 0;
+            color: #00d4ff;
+            font-size: 2.5em;
+            text-shadow: 0 0 10px #00d4ff;
+        }
+        header p {
+            margin: 10px 0 0 0;
+            font-size: 1.2em;
+            color: #b0b0b0;
+        }
+        main {
+            flex: 1;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        .file-list {
+            background-color: #1e1e1e;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #333;
+        }
+        th {
+            background-color: #2a2a2a;
+            color: #00d4ff;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        tr:hover {
+            background-color: #252525;
+        }
+        .file-link {
+            color: #00d4ff;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .file-link:hover {
+            text-decoration: underline;
+        }
+        .file-size {
+            color: #b0b0b0;
+        }
+        .file-ext {
+            background-color: #333;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            text-transform: uppercase;
+        }
+        .file-date {
+            color: #888;
+        }
+        footer {
+            background-color: #1e1e1e;
+            padding: 10px;
+            text-align: center;
+            border-top: 1px solid #333;
+            color: #666;
+        }
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #00d4ff;
+        }
+        .error {
+            text-align: center;
+            padding: 50px;
+            color: #ff6b6b;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>DocDriv</h1>
+        <p>Your Personal File Storage & Sharing Platform</p>
+    </header>
+    <main>
+        <div class="file-list">
+            <table id="fileTable">
+                <thead>
+                    <tr>
+                        <th>File Name</th>
+                        <th>Extension</th>
+                        <th>Size</th>
+                        <th>Date Added</th>
+                        <th>Download</th>
+                    </tr>
+                </thead>
+                <tbody id="fileBody">
+                    <tr>
+                        <td colspan="5" class="loading">Loading files...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+    <footer>
+        <p>&copy; 2026 DocDriv. All rights reserved.</p>
+    </footer>
+
+    <script>
+        const repoOwner = 'zaravtu-cell';
+        const repoName = 'redo';
+        const branch = 'main';
+
+        async function fetchFiles() {
+            try {
+                const response = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/contents?ref=${branch}`);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch files');
+                }
+                const files = await response.json();
+                displayFiles(files);
+            } catch (error) {
+                document.getElementById('fileBody').innerHTML = `<tr><td colspan="5" class="error">Error loading files: ${error.message}</td></tr>`;
+            }
+        }
+
+        function displayFiles(files) {
+            const tbody = document.getElementById('fileBody');
+            tbody.innerHTML = '';
+
+            files.forEach(file => {
+                if (file.type === 'file') {
+                    const fileName = file.name;
+                    const fileExt = fileName.split('.').pop().toUpperCase();
+                    const fileSize = formatSize(file.size);
+                    const fileDate = new Date(file.created_at || Date.now()).toLocaleDateString();
+                    const downloadUrl = file.download_url;
+
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${fileName}</td>
+                        <td><span class="file-ext">${fileExt}</span></td>
+                        <td class="file-size">${fileSize}</td>
+                        <td class="file-date">${fileDate}</td>
+                        <td><a href="${downloadUrl}" class="file-link" download>Download</a></td>
+                    `;
+                    tbody.appendChild(row);
+                }
+            });
+        }
+
+        function formatSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        fetchFiles();
+    </script>
+</body>
+</html>
